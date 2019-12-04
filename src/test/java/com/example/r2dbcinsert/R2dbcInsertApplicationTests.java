@@ -3,6 +3,7 @@ package com.example.r2dbcinsert;
 import io.r2dbc.pool.ConnectionPool;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
 import io.r2dbc.spi.ConnectionFactory;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -17,6 +18,7 @@ import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ContextConfiguration(initializers = R2dbcInsertApplicationTests.TestDatabaseConfiguration.class)
 @SpringBootTest
@@ -31,12 +33,18 @@ class R2dbcInsertApplicationTests {
 	@Resource
 	private ConnectionFactory connectionFactory;
 
+	@BeforeEach
+	void setup() {
+		customerRepository.deleteAll().block();
+		assertEquals(0L, customerRepository.count().block());
+	}
+
 	@Test
 	void testInsertRepository() {
 		Customer customer = new Customer();
 		customer.setId(1L);
 		customer.setFirstName("John");
-		customerRepository.save(customer).block();
+		assertEquals(customer, customerRepository.save(customer).block());
 		assertEquals(1L, customerRepository.count().block());
 	}
 
@@ -56,7 +64,7 @@ class R2dbcInsertApplicationTests {
 						it.createStatement("insert into customer (id, first_name) values (3, 'John')")
 								.execute()
 								.thenMany(it.close())
-				).subscribe();
+				).blockFirst();
 		assertEquals(1L, customerRepository.count().block());
 	}
 
